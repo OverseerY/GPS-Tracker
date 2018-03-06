@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">GPS Tracker</string>
+    <string name="action_settings">Settings</string>
+    <string name="main_activity_text">Press button to start tracking</string>
+</resources>
