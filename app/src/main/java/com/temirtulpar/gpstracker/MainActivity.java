@@ -43,7 +43,10 @@ public class MainActivity extends AppCompatActivity {
         if (id == R.id.action_settings) {
             startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
         }
-
+        if (id == R.id.stop_service) {
+            stopService(new Intent(this, LocationService.class));
+            this.finish();
+        }
         return super.onOptionsItemSelected(item);
     }
 }

@@ -1,7 +1,11 @@
 package com.temirtulpar.gpstracker;
 
 import android.Manifest;
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
+import android.app.TaskStackBuilder;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -34,10 +38,13 @@ import java.util.Date;
 public class LocationService extends Service {
     private static final String TAG = "TESTGPS";
 
+    public static final int NOTIFICATION_ID = 5454;
+
     private String mLatitude;
     private String mLongitude;
     private String mTime;
     private int mId;
+    private String sTime;
 
     Ticket ticket;
     private String IMEI = "";
@@ -135,6 +142,7 @@ public class LocationService extends Service {
     @Override
     public void onDestroy() {
         Log.e(TAG, "onDestroy");
+        Toast.makeText(this,"Service destroyed", Toast.LENGTH_SHORT).show();
         super.onDestroy();
         if (locationManager != null) {
             for (int i = 0; i < mLocationListeners.length; i++) {
@@ -145,7 +153,6 @@ public class LocationService extends Service {
                 }
             }
         }
-        Toast.makeText(this,"Service destroyed", Toast.LENGTH_SHORT).show();
     }
 
     private void initializeLocationManager() {
@@ -166,7 +173,7 @@ public class LocationService extends Service {
     }
 
     private class HttpAsyncTask extends AsyncTask<String, Void, String> {
-        String curLocation = "" + mLatitude +"," + mLongitude + "," + mTime;
+        String curLocation = "" + mTime + ";" + mLatitude +";" + mLongitude;
         String curImei = IMEI;
         String curId = "" + mId;
         @Override
@@ -233,10 +240,32 @@ public class LocationService extends Service {
             public void run() {
                 handler.postDelayed(this, 20000);
                 new HttpAsyncTask().execute("http://testapi312.azurewebsites.net/api/values/");
-                Toast.makeText(getApplicationContext(), "Location has been sent", Toast.LENGTH_SHORT).show();
+                showNotification();
+                //Toast.makeText(getApplicationContext(), "Location has been sent", Toast.LENGTH_SHORT).show();
             }
         });
 
+    }
+
+    private void showNotification() {
+        sTime = getSendTimeStamp();
+
+        Intent intent = new Intent(this, MainActivity.class);
+        TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
+        stackBuilder.addParentStack(MainActivity.class);
+        stackBuilder.addNextIntent(intent);
+        PendingIntent pendingIntent = stackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT);
+
+        Notification notification = new Notification.Builder(getApplicationContext())
+                .setSmallIcon(R.mipmap.ic_launch)
+                .setContentTitle(getString(R.string.app_name))
+                .setContentText("Location has been sent " + sTime )
+                .setAutoCancel(true)
+                .setPriority(Notification.PRIORITY_MAX)
+                .setContentIntent(pendingIntent)
+                .build();
+        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager.notify(NOTIFICATION_ID, notification);
     }
 
     private String converteTime(long locTime) {
@@ -248,6 +277,13 @@ public class LocationService extends Service {
 
     public String getCurrentTimeStamp() {
         SimpleDateFormat sdfDate = new SimpleDateFormat("ddMMHHmm");//dd/MM/yyyy
+        Date now = new Date();
+        String strDate = sdfDate.format(now);
+        return strDate;
+    }
+
+    public String getSendTimeStamp() {
+        SimpleDateFormat sdfDate = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");//dd/MM/yyyy
         Date now = new Date();
         String strDate = sdfDate.format(now);
         return strDate;
