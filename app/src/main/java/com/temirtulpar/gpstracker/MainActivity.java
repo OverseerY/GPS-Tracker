@@ -1,9 +1,12 @@
 package com.temirtulpar.gpstracker;
 
+import android.Manifest;
 import android.content.Intent;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
@@ -11,6 +14,10 @@ import android.view.Menu;
 import android.view.MenuItem;
 
 public class MainActivity extends AppCompatActivity {
+
+    private static int PERMISSIONS_REQUEST_READ_PHONE_STATE;
+    private static int PERMISSIONS_REQUEST_INTERNET;
+    private static int PERMISSIONS_REQUEST_LOCATION;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,3 +57,47 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -11,10 +11,13 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.telephony.TelephonyManager;
 import android.util.Log;
@@ -39,12 +42,15 @@ public class LocationService extends Service {
     private static final String TAG = "TESTGPS";
 
     public static final int NOTIFICATION_ID = 5454;
+    public static final int ONGOING_NOTIFICATION_ID = 1234;
 
     private String mLatitude;
     private String mLongitude;
     private String mTime;
     private int mId;
     private String sTime;
+    private boolean isInternetConnected;
+    private boolean isLocationEnabled;
 
     Ticket ticket;
     private String IMEI = "";
@@ -105,8 +111,16 @@ public class LocationService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.e(TAG, "onStartCommand");
         super.onStartCommand(intent, flags, startId);
-        Toast.makeText(this, "Service started", Toast.LENGTH_SHORT).show();
-        sendLocation();
+        if (checkInternetConnection()) {
+            if (isLocationEnabled) {
+                sendLocation();
+                Toast.makeText(this, "Service started", Toast.LENGTH_SHORT).show();
+            } else {
+                showNotification(getText(R.string.gps_disabled).toString(),getText(R.string.enable_gps).toString());
+            }
+        } else {
+            showNotification(getText(R.string.internet_disconnected).toString(),getText(R.string.enable_network).toString());
+        }
         return START_STICKY;
     }
 
@@ -114,29 +128,7 @@ public class LocationService extends Service {
     public void onCreate() {
         Log.e(TAG, "onCreate");
         initializeLocationManager();
-        IMEI= getImei();
-        try {
-            locationManager.requestLocationUpdates(
-                    LocationManager.NETWORK_PROVIDER, LOCATION_INTERVAL, LOCATION_DISTANCE,
-                    mLocationListeners[1]);
-        } catch (java.lang.SecurityException ex) {
-            Log.i(TAG, "Fail to request location update, ignore", ex);
-            Toast.makeText(this, "Fail to request location update", Toast.LENGTH_SHORT).show();
-        } catch (IllegalArgumentException ex) {
-            Log.d(TAG, "Network provider does not exist, " + ex.getMessage());
-            Toast.makeText(this, "Network provider does not exist", Toast.LENGTH_SHORT);
-        }
-        try {
-            locationManager.requestLocationUpdates(
-                    LocationManager.GPS_PROVIDER, LOCATION_INTERVAL, LOCATION_DISTANCE,
-                    mLocationListeners[0]);
-        } catch (java.lang.SecurityException ex) {
-            Log.i(TAG, "Fail to request location update, ignore", ex);
-            Toast.makeText(this, "Fail to request location update", Toast.LENGTH_SHORT).show();
-        } catch (IllegalArgumentException ex) {
-            Log.d(TAG, "Gps provider does not exist " + ex.getMessage());
-            Toast.makeText(this, "Gps provider does not exist", Toast.LENGTH_SHORT).show();
-        }
+        IMEI = getImei();
     }
 
     @Override
@@ -157,18 +149,50 @@ public class LocationService extends Service {
 
     private void initializeLocationManager() {
         Log.e(TAG, "initializeLocationManager");
+
         if (locationManager == null) {
             locationManager = (LocationManager) getApplicationContext().getSystemService(Context.LOCATION_SERVICE);
-            Toast.makeText(this, "Location Manager Initialized", Toast.LENGTH_SHORT).show();
+            if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                try {
+                    locationManager.requestLocationUpdates(
+                            LocationManager.GPS_PROVIDER, LOCATION_INTERVAL, LOCATION_DISTANCE,
+                            mLocationListeners[0]);
+                } catch (java.lang.SecurityException ex) {
+                    Log.i(TAG, "Fail to request location update, ignore", ex);
+                    Toast.makeText(this, "Fail to request location update", Toast.LENGTH_SHORT).show();
+                } catch (IllegalArgumentException ex) {
+                    Log.d(TAG, "Gps provider does not exist " + ex.getMessage());
+                    Toast.makeText(this, "Gps provider does not exist", Toast.LENGTH_SHORT).show();
+                }
+                isLocationEnabled = true;
+            } else if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+                try {
+                    locationManager.requestLocationUpdates(
+                            LocationManager.NETWORK_PROVIDER, LOCATION_INTERVAL, LOCATION_DISTANCE,
+                            mLocationListeners[1]);
+                } catch (java.lang.SecurityException ex) {
+                    Log.i(TAG, "Fail to request location update, ignore", ex);
+                    Toast.makeText(this, "Fail to request location update", Toast.LENGTH_SHORT).show();
+                } catch (IllegalArgumentException ex) {
+                    Log.d(TAG, "Network provider does not exist, " + ex.getMessage());
+                    Toast.makeText(this, "Network provider does not exist", Toast.LENGTH_SHORT);
+                }
+                isLocationEnabled = true;
+            } else {
+                showNotification(getText(R.string.gps_disabled).toString(),getText(R.string.enable_gps).toString());
+                isLocationEnabled = false;
+            }
         }
     }
 
     public String getImei() {
         String imei = null;
+
         if (ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) {
             TelephonyManager telephonyManager = (TelephonyManager) getSystemService(getApplicationContext().TELEPHONY_SERVICE);
             imei = telephonyManager.getDeviceId();
         }
+
         return imei;
     }
 
@@ -240,14 +264,14 @@ public class LocationService extends Service {
             public void run() {
                 handler.postDelayed(this, 20000);
                 new HttpAsyncTask().execute("http://testapi312.azurewebsites.net/api/values/");
-                showNotification();
+                setForegroundService();
                 //Toast.makeText(getApplicationContext(), "Location has been sent", Toast.LENGTH_SHORT).show();
             }
         });
 
     }
 
-    private void showNotification() {
+    private void showNotification(String contentTitle, String contentText) {
         sTime = getSendTimeStamp();
 
         Intent intent = new Intent(this, MainActivity.class);
@@ -258,14 +282,33 @@ public class LocationService extends Service {
 
         Notification notification = new Notification.Builder(getApplicationContext())
                 .setSmallIcon(R.mipmap.ic_launch)
-                .setContentTitle(getString(R.string.app_name))
-                .setContentText("Location has been sent " + sTime )
+                .setContentTitle(contentTitle)
+                .setContentText(contentText)
                 .setAutoCancel(true)
+                .setDefaults(Notification.DEFAULT_VIBRATE)
                 .setPriority(Notification.PRIORITY_MAX)
                 .setContentIntent(pendingIntent)
                 .build();
         NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         notificationManager.notify(NOTIFICATION_ID, notification);
+    }
+
+
+    private void setForegroundService() {
+        Intent notificationIntent = new Intent(this, MainActivity.class);
+        sTime = getSendTimeStamp();
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
+
+        Notification notification = new Notification.Builder(this)
+                        .setContentTitle(getText(R.string.notif_text))
+                        .setContentText("Location has been sent " + sTime )
+                        .setSmallIcon(R.mipmap.ic_launch)
+                        .setPriority(Notification.PRIORITY_HIGH)
+                        .setContentIntent(pendingIntent)
+                        .setTicker(getText(R.string.ticker_text))
+                        .build();
+
+        startForeground(ONGOING_NOTIFICATION_ID, notification);
     }
 
     private String converteTime(long locTime) {
@@ -287,5 +330,15 @@ public class LocationService extends Service {
         Date now = new Date();
         String strDate = sdfDate.format(now);
         return strDate;
+    }
+
+    private boolean checkInternetConnection() {
+        isInternetConnected = false;
+
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        if ( cm.getNetworkInfo(ConnectivityManager.TYPE_WIFI).getState() == NetworkInfo.State.CONNECTED || cm.getNetworkInfo(ConnectivityManager.TYPE_MOBILE).getState() == NetworkInfo.State.CONNECTED ) {
+            isInternetConnected = true;
+        }
+        return isInternetConnected;
     }
 }
