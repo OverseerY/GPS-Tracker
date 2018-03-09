@@ -1,12 +1,18 @@
 package com.temirtulpar.gpstracker;
 
 import android.Manifest;
+import android.app.AlertDialog;
+import android.app.Dialog;
+import android.app.DialogFragment;
+import android.app.Fragment;
+import android.app.FragmentTransaction;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.app.TaskStackBuilder;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
@@ -14,13 +20,16 @@ import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.provider.Settings;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.telephony.TelephonyManager;
 import android.util.Log;
+import android.view.View;
 import android.widget.Toast;
 
 import org.json.JSONObject;
@@ -112,11 +121,12 @@ public class LocationService extends Service {
         Log.e(TAG, "onStartCommand");
         super.onStartCommand(intent, flags, startId);
         if (checkInternetConnection()) {
-            if (isLocationEnabled) {
+            if (mLatitude != null && mLongitude != null) {
                 sendLocation();
                 Toast.makeText(this, "Service started", Toast.LENGTH_SHORT).show();
             } else {
-                showNotification(getText(R.string.gps_disabled).toString(),getText(R.string.enable_gps).toString());
+                showNotification(getText(R.string.location_is_null).toString(), getText(R.string.wait).toString());
+                //showNotification(getText(R.string.gps_disabled).toString(),getText(R.string.enable_gps).toString());
             }
         } else {
             showNotification(getText(R.string.internet_disconnected).toString(),getText(R.string.enable_network).toString());
@@ -341,4 +351,49 @@ public class LocationService extends Service {
         }
         return isInternetConnected;
     }
+
+    /*
+    public static class AlertDialogFragment extends DialogFragment {
+        static AlertDialogFragment newInstance(int title) {
+            AlertDialogFragment fragment = new AlertDialogFragment();
+            Bundle  args = new Bundle();
+            args.putInt("title", title);
+            fragment.setArguments(args);
+
+            return fragment;
+        }
+
+        @Override
+        public Dialog onCreateDialog(Bundle savedInstanceState) {
+            int title = getArguments().getInt("title");
+
+            return new AlertDialog.Builder(getActivity())
+                    .setIcon(android.R.drawable.ic_dialog_alert)
+                    .setTitle(title)
+                    .setPositiveButton(R.string.action_settings, new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int whichButton) {
+                            doPositiveClick();
+                        }
+                    })
+                    .setNegativeButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int whichButton) {
+                            //doNegativeClick();
+                            dialog.cancel();
+                        }
+                    })
+                    .create();
+        }
+
+        void showDialog() {
+            DialogFragment fragment = AlertDialogFragment.newInstance(R.string.internet_disconnected);
+            fragment.show(getFragmentManager(), "dialog");
+        }
+
+        public void doPositiveClick() {
+            startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
+        }
+
+        public void doNegativeClick() {}
+    }
+    */
 }

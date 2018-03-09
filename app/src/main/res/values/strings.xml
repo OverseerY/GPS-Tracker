@@ -10,7 +10,9 @@
     <string name="network_enabled">Network enabled</string>
     <string name="gps_enabled">GPS enabled</string>
     <string name="gps_disabled">GPS disabled</string>
-    <string name="enable_gps">Please, enable geolocation in settings</string>
-    <string name="enable_network">Please, enable Wi-Fi and/or mobile network connection</string>
+    <string name="enable_gps">Please, enable geolocation in settings and try again</string>
+    <string name="enable_network">Please, enable Wi-Fi and/or mobile network connection and try again</string>
     <string name="loc_man_initialized">Location Manager initialized</string>
+    <string name="location_is_null">Location is not received</string>
+    <string name="wait">Please, wait while location will be received and try again</string>
 </resources>
