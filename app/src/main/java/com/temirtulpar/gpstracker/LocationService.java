@@ -351,49 +351,4 @@ public class LocationService extends Service {
         }
         return isInternetConnected;
     }
-
-    /*
-    public static class AlertDialogFragment extends DialogFragment {
-        static AlertDialogFragment newInstance(int title) {
-            AlertDialogFragment fragment = new AlertDialogFragment();
-            Bundle  args = new Bundle();
-            args.putInt("title", title);
-            fragment.setArguments(args);
-
-            return fragment;
-        }
-
-        @Override
-        public Dialog onCreateDialog(Bundle savedInstanceState) {
-            int title = getArguments().getInt("title");
-
-            return new AlertDialog.Builder(getActivity())
-                    .setIcon(android.R.drawable.ic_dialog_alert)
-                    .setTitle(title)
-                    .setPositiveButton(R.string.action_settings, new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int whichButton) {
-                            doPositiveClick();
-                        }
-                    })
-                    .setNegativeButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int whichButton) {
-                            //doNegativeClick();
-                            dialog.cancel();
-                        }
-                    })
-                    .create();
-        }
-
-        void showDialog() {
-            DialogFragment fragment = AlertDialogFragment.newInstance(R.string.internet_disconnected);
-            fragment.show(getFragmentManager(), "dialog");
-        }
-
-        public void doPositiveClick() {
-            startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
-        }
-
-        public void doNegativeClick() {}
-    }
-    */
 }
